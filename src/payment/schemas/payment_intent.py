@@ -1,9 +1,13 @@
 """Pydantic request/response schemas."""
 
+from __future__ import annotations
+
 from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, Field
+
+from payment.schemas.ledger import LedgerEntryResponse
 
 
 class PaymentIntentCreate(BaseModel):
@@ -30,4 +34,4 @@ class PaymentIntentResponse(BaseModel):
 class PaymentIntentDetail(PaymentIntentResponse):
     """Full detail response including ledger entries."""
 
-    ledger_entries: list["LedgerEntryResponse"] = []
+    ledger_entries: list[LedgerEntryResponse] = []

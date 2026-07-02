@@ -1,0 +1,51 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# functional.yml — Integration / acceptance tests
+# Spins up the full stack (Postgres + Redis + App), runs migrations,
+# then executes the black-box acceptance suite from verify/.
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: functional
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "23 13 * * *"
+
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start services
+        run: |
+          APP_PORT=8030 docker compose up -d --build
+          # Wait for health
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8030/healthz > /dev/null 2>&1; then
+              echo "App is ready"
+              break
+            fi
+            echo "Waiting for app... ($i/30)"
+            sleep 2
+          done
+
+      - name: Run database migrations
+        run: docker compose exec -T app alembic upgrade head
+
+      - name: Install test deps
+        run: pip install httpx pytest
+
+      - name: Run acceptance tests
+        run: API_BASE_URL="http://localhost:8030" pytest verify/acceptance -v --tb=short
+
+      - name: Collect logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Teardown
+        if: always()
+        run: APP_PORT=8030 docker compose down --volumes --remove-orphans

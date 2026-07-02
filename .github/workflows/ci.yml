@@ -1,0 +1,32 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# ci.yml — Build verification
+# Builds the Docker image and runs Python-level checks.
+# Unit tests: none yet (known design-task gap — MVP scope).
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "23 13 * * *"
+
+jobs:
+  build-and-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t payment-system .
+
+      - name: Verify container starts
+        run: |
+          docker run -d --name payment-ci \
+            -e DB_DSN=postgresql+asyncpg://payment:payment@localhost:5432/payment \
+            -e REDIS_URL=redis://localhost:6379/0 \
+            payment-system sleep 5
+          docker rm -f payment-ci

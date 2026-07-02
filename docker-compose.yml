@@ -1,7 +1,18 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Payment System MVP — docker-compose
+# ─────────────────────────────────────────────────────────────────────────────
+# Bring up:   APP_PORT=8030 docker compose up -d --build
+# Tear down:  docker compose down --volumes --remove-orphans
+# Logs:       docker compose logs -f app
+# Health:     curl -sf http://localhost:${APP_PORT:-8030}/healthz
+# Migrations: docker compose exec app alembic upgrade head
+# ─────────────────────────────────────────────────────────────────────────────
+
 services:
   # ── Database ──────────────────────────────────────────────────────────
   db:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: payment
       POSTGRES_PASSWORD: payment
@@ -10,47 +21,62 @@ services:
       # Published only for local debugging. The app talks over the compose
       # network — comment this out if the host port collides with another
       # Postgres instance.
-      - "5433:5432"
+      - "${PG_PORT:-5433}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U payment -d payment"]
       interval: 3s
       timeout: 3s
       retries: 10
+      start_period: 10s
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - payment-net
 
   # ── Redis ─────────────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     ports:
       # Published only for local debugging.
-      - "6380:6379"
+      - "${REDIS_PORT:-6380}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 3s
       timeout: 3s
       retries: 10
+      start_period: 5s
+    networks:
+      - payment-net
 
   # ── App ───────────────────────────────────────────────────────────────
   app:
     build:
       context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
     ports:
       - "${APP_PORT:-8030}:8000"
-    environment:
-      DB_DSN: "postgresql+asyncpg://payment:payment@db:5432/payment"
-      REDIS_URL: "redis://redis:6379/0"
-      LOG_LEVEL: "debug"
+    env_file:
+      - .env
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8000/healthz"]
+      test: ["CMD", "python", "-c",
+        "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz').read()"]
       interval: 5s
       timeout: 3s
       retries: 5
+      start_period: 15s
+    networks:
+      - payment-net
 
 volumes:
   pgdata:
+
+networks:
+  payment-net:
+    driver: bridge
