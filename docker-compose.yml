@@ -58,7 +58,13 @@ services:
     ports:
       - "${APP_PORT:-8030}:8000"
     env_file:
-      - .env
+      # Optional: .env is gitignored; a clean checkout (e.g. CI) runs on the
+      # in-container defaults below.
+      - path: .env
+        required: false
+    environment:
+      DB_DSN: postgresql+asyncpg://payment:payment@db:5432/payment
+      REDIS_URL: redis://redis:6379/0
     depends_on:
       db:
         condition: service_healthy
