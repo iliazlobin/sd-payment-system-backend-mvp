@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Virtual envs
+.venv/
+venv/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# pytest
+.pytest_cache/
+
+# Docker
+verify/logs/
+verify/state/
+
+# Redis
+*.rdb
+dump.rdb
+.venv*/
+env/
+.ruff_cache/
+.mypy_cache/
+*.log
+.finalize.lock/
+.noship
