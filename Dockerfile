@@ -11,7 +11,8 @@ FROM python:3.12-slim
 
 ENV PYTHONUNBUFFERED=1 \
     PATH="/root/.local/bin:${PATH}" \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH=/app/src
 
 COPY --from=builder /root/.local /root/.local
 
