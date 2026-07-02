@@ -19,7 +19,8 @@ COPY --from=builder /root/.local /root/.local
 WORKDIR /app
 
 COPY src/ src/
-COPY alembic.ini alembic/ alembic/
+COPY alembic.ini ./
+COPY alembic/ alembic/
 
 EXPOSE 8000
 
